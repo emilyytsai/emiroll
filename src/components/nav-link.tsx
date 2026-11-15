@@ -7,10 +7,20 @@ import { usePathname } from "next/navigation";
 import { MotionConfig, motion } from "motion/react";
 
 export function NavLink() {
-  const onGallery = usePathname() === "/gallery";
+  const pathname = usePathname();
+  // key={pathname} remounts the link on every page change, which resets the hover state.
+  // So after clicking "see the full gallery" (arrow already slid right), the gallery link
+  // starts in its resting spot — arrow on the right — instead of its hovered spot.
+  return <NavLinkInner key={pathname} onGallery={pathname === "/gallery"} />;
+}
+
+function NavLinkInner({ onGallery }: { onGallery: boolean }) {
   const [active, setActive] = useState(false);
   const on = () => setActive(true);
   const off = () => setActive(false);
+  // home: arrow starts left of the text and slides right on hover.
+  // gallery: arrow starts right of the text (pointing left) and slides left on hover.
+  const reversed = active !== onGallery;
 
   return (
     // reducedMotion="user" skips the slide for people who turned off animations in their OS
@@ -24,8 +34,8 @@ export function NavLink() {
         onMouseLeave={off}
         onFocus={on}
         onBlur={off}
-        // flipping the row order on hover; motion's `layout` animates both pieces to their new spots
-        className={`flex items-center gap-2 font-pretty text-2xl text-foreground/70 underline-offset-4 transition-colors hover:text-foreground ${active ? "flex-row-reverse" : "flex-row"}`}
+        // flipping the row order on hover (see `reversed`); motion's `layout` animates both pieces to their new spots
+        className={`flex items-center gap-2 font-pretty text-2xl text-foreground/70 transition-colors hover:text-foreground ${reversed ? "flex-row-reverse" : "flex-row"}`}
       >
         {/* fade the arrow out while it crosses the text, then back in at its new spot */}
         <motion.span
@@ -47,7 +57,7 @@ export function NavLink() {
             className={onGallery ? "rotate-180" : ""}
           />
         </motion.span>
-        <motion.span layout="position" className={active ? "underline" : ""}>
+        <motion.span layout="position">
           {onGallery ? "back to the digicam" : "see the full gallery"}
         </motion.span>
       </Link>
