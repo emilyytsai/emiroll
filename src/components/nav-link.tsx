@@ -35,12 +35,12 @@ function NavLinkInner({ onGallery }: { onGallery: boolean }) {
         onFocus={on}
         onBlur={off}
         // flipping the row order on hover (see `reversed`); motion's `layout` animates both pieces to their new spots
-        className={`flex items-center gap-2 font-pretty text-2xl text-foreground/70 transition-colors hover:text-foreground ${reversed ? "flex-row-reverse" : "flex-row"}`}
+        className={`flex items-center gap-1 whitespace-nowrap font-pretty text-lg text-foreground/70 sm:gap-2 sm:text-2xl transition-colors hover:text-foreground ${reversed ? "flex-row-reverse" : "flex-row"}`}
       >
         {/* fade the arrow out while it crosses the text, then back in at its new spot */}
         <motion.span
           layout="position"
-          className="flex"
+          className="flex shrink-0"
           initial={false}
           animate={{ opacity: active ? [0.7, 0, 0, 1] : [1, 0, 0, 0.7] }}
           transition={{
@@ -54,7 +54,7 @@ function NavLinkInner({ onGallery }: { onGallery: boolean }) {
             width={28}
             height={28}
             loading="eager"
-            className={onGallery ? "rotate-180" : ""}
+            className={`h-auto w-5 sm:w-7 ${onGallery ? "rotate-180" : ""}`}
           />
         </motion.span>
         <motion.span layout="position">
