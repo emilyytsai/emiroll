@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffebfab;
+  --background: #ffebfa;
   --foreground: #171717;
 }
 
@@ -9,6 +9,16 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-pretty: var(--font-pretty-notes);
+
+  /* header idle wave: each piece does a quick hop, then rests until the next wave */
+  --animate-wave: wave 10s ease-in-out infinite;
+
+  /* plays every 10s. The hop is 4% of the cycle (~0.4s, the snappy hop); the rest is idle.
+     If you change the 10s, rescale these % to keep it snappy. */
+  @keyframes wave {
+    0%, 4%, 100% { transform: translateY(0); }
+    2% { transform: translateY(-6px); }
+  }
 }
 
 body {
