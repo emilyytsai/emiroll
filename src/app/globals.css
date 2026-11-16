@@ -11,9 +11,9 @@
   --font-pretty: var(--font-pretty-notes);
 
   /* header idle wave: each piece does a quick hop, then rests until the next wave */
-  --animate-wave: wave 8s ease-in-out infinite;
+  --animate-wave: wave 5s ease-in-out infinite;
 
-  /* plays every 8s. The hop is the last 4% of the cycle (~0.32s, the snappy hop); the rest is idle.
+  /* plays every 5s. The hop is the last 4% of the cycle (~0.32s, the snappy hop); the rest is idle.
      The hop sits at the END so that when the mouse leaves and the idle loop restarts, it rests
      first instead of waving again right away. If you change the 8s, rescale these % to keep it snappy. */
   @keyframes wave {
