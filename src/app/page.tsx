@@ -9,7 +9,7 @@ export default function Home() {
         {" "}from my camera roll
       </h1>
       {/* the digicam: centered in the space between the tagline and the footer */}
-      <div className="flex flex-1 items-center justify-center px-6 py-8">
+      <div className="flex flex-1 items-center justify-center px-6">
       {/* Desktop camera */}
         <Image
           src="/camera.png"
@@ -19,7 +19,7 @@ export default function Home() {
           loading="eager"
           fetchPriority="high"
           unoptimized
-          className="hidden h-auto w-full max-w-3xl md:block"
+          className="hidden h-auto w-full max-w-4xl md:block"
         />
 
         {/* Mobile camera */}
