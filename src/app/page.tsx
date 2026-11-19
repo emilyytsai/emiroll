@@ -3,7 +3,7 @@ import { Digicam } from "@/components/digicam";
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col">
-      <h1 className="font-pretty -mt-1 px-6 text-2xl text-foreground/70">
+      <h1 className="font-pretty -mt-1 px-6 text-2xl leading-[24px] text-foreground/70 md:leading-8">
         little moments
         <br className="md:hidden" />
         {" "}from my camera roll

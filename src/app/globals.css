@@ -28,7 +28,30 @@
   @keyframes wave-once {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
-  }}
+  }
+
+  /* camera keychain idle: a slow, barely-there sway around the ring */
+  --animate-key-idle: key-idle 7s ease-in-out infinite;
+
+  @keyframes key-idle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(1.2deg); }
+    75% { transform: rotate(-1.2deg); }
+  }
+
+  /* camera keychain hover: a quick bouncy swing that settles back to rest.
+     Plays once per hover (digicam.tsx restarts it), stacked on top of the idle sway. */
+  --animate-key-swing: key-swing 1.4s cubic-bezier(0.37, 0, 0.63, 1);
+
+  @keyframes key-swing {
+    0%, 100% { transform: rotate(0deg); }
+    12% { transform: rotate(1.7deg); }
+    30% { transform: rotate(-1.2deg); }
+    47% { transform: rotate(0.75deg); }
+    63% { transform: rotate(-0.4deg); }
+    79% { transform: rotate(0.15deg); }
+  }
+}
 
 body {
   background: var(--background);

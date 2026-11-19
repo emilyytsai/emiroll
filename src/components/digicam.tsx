@@ -129,6 +129,68 @@ function Hotspot({
   );
 }
 
+// where the keychain's ring threads through the camera's strap lug
+const KEYCHAIN_PIVOT = { desktop: "86.4% 16.8%", mobile: "83.2% 86.4%" };
+// where hovering starts the bouncy swing
+const KEYCHAIN_HOVER = {
+  desktop: box(79.8, 15.5, 19.4, 80.1),
+  mobile: box(4.3, 79.8, 80.1, 19.4),
+};
+
+// keychain: just art for now, not a button. Idle sway on the wrapper, hover
+// swing on the image, so the two add up instead of jumping between each other.
+function Keychain({ variant }: { variant: "desktop" | "mobile" }) {
+  const desktop = variant === "desktop";
+  const [swinging, setSwinging] = useState(false);
+  const origin = { transformOrigin: KEYCHAIN_PIVOT[variant] };
+
+  return (
+    <>
+      {/* rendered before the buttons, so the d-pad stays clickable where the
+          hover area overlaps it on mobile */}
+      <div
+        aria-hidden
+        className="absolute"
+        style={KEYCHAIN_HOVER[variant]}
+        onMouseEnter={() => setSwinging(true)}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 motion-safe:animate-key-idle"
+        style={origin}
+      >
+        <Image
+          src={desktop ? "/keychain.png" : "/keychain-mobile.png"}
+          alt=""
+          aria-hidden
+          width={desktop ? 2360 : 1640}
+          height={desktop ? 1640 : 2360}
+          loading="eager"
+          unoptimized
+          // the swing plays to the end even if the mouse leaves, then resets
+          // so the next hover swings again
+          onAnimationEnd={() => setSwinging(false)}
+          className={`h-full w-full select-none ${
+            swinging ? "motion-safe:animate-key-swing" : ""
+          }`}
+          style={origin}
+        />
+      </div>
+      {/* bit of the strap lug drawn over the ring so it looks threaded
+          through the camera; stays still while the keychain swings */}
+      <Image
+        src={desktop ? "/keychain_loop.png" : "/keychain_loop-mobile.png"}
+        alt=""
+        aria-hidden
+        width={desktop ? 2360 : 1640}
+        height={desktop ? 1640 : 2360}
+        loading="eager"
+        unoptimized
+        className="pointer-events-none absolute inset-0 h-full w-full select-none"
+      />
+    </>
+  );
+}
+
 function Camera({
   variant,
   pressed,
@@ -157,17 +219,7 @@ function Camera({
         unoptimized
         className="h-auto w-full transform-gpu"
       />
-      {/* keychain: just art for now, not a button */}
-      <Image
-        src={desktop ? "/keychain.png" : "/keychain-mobile.png"}
-        alt=""
-        aria-hidden
-        width={desktop ? 2360 : 1640}
-        height={desktop ? 1640 : 2360}
-        loading="eager"
-        unoptimized
-        className="pointer-events-none absolute inset-0 h-full w-full select-none"
-      />
+      <Keychain variant={variant} />
       {BUTTONS.map((part) => (
         <Hotspot key={part.id} part={part} variant={variant} />
       ))}
