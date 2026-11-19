@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 
 type Box = { left: string; top: string; width: string; height: string };
@@ -20,6 +21,8 @@ type Part = {
   // the base drawing; the d-pad divider would otherwise brighten away on hover
   desktopClip?: string;
   mobileClip?: string;
+  // makes the hotspot a link to this page instead of a button
+  href?: string;
 };
 
 const box = (left: number, top: number, width: number, height: number): Box => ({
@@ -42,7 +45,8 @@ const SWITCH: Part = {
 const BUTTONS: Part[] = [
   {
     id: "gallery",
-    label: "gallery",
+    label: "open the gallery",
+    href: "/gallery",
     desktop: "/gallery.png",
     mobile: "/gallery-mobile.png",
     desktopBox: box(65.2, 32.3, 8, 11.2),
@@ -102,18 +106,28 @@ function Hotspot({
   onClick?: () => void;
 }) {
   const [w, h] = variant === "desktop" ? [2360, 1640] : [1640, 2360];
+  const style = variant === "desktop" ? part.desktopBox : part.mobileBox;
   // each button + its art lives in its own layer so `peer-hover` only lights
   // up that button's art, not every overlay after it
   return (
     <div className="pointer-events-none absolute inset-0">
-      <button
-        type="button"
-        aria-label={part.label}
-        aria-pressed={pressed}
-        onClick={onClick}
-        className={`pointer-events-auto ${buttonClass(part.round)}`}
-        style={variant === "desktop" ? part.desktopBox : part.mobileBox}
-      />
+      {part.href ? (
+        <Link
+          href={part.href}
+          aria-label={part.label}
+          className={`pointer-events-auto ${buttonClass(part.round)}`}
+          style={style}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label={part.label}
+          aria-pressed={pressed}
+          onClick={onClick}
+          className={`pointer-events-auto ${buttonClass(part.round)}`}
+          style={style}
+        />
+      )}
       <Image
         src={variant === "desktop" ? part.desktop : part.mobile}
         alt=""
