@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { PHOTOS } from "@/data/photos";
 
 type Box = { left: string; top: string; width: string; height: string };
 
@@ -25,12 +26,25 @@ type Part = {
   href?: string;
 };
 
-const box = (left: number, top: number, width: number, height: number): Box => ({
+const box = (
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): Box => ({
   left: `${left}%`,
   top: `${top}%`,
   width: `${width}%`,
   height: `${height}%`,
 });
+
+// the see-through screen hole in each drawing (mobile is the desktop rotated
+// 90°), grown ~10px per side so the photo tucks under the drawn outline and
+// never leaves a gap
+const SCREEN = {
+  desktop: box(10.77, 26.77, 50.46, 50.06),
+  mobile: box(23.17, 10.77, 50.06, 50.46),
+};
 
 const SWITCH: Part = {
   id: "switch",
@@ -137,7 +151,9 @@ function Hotspot({
         loading="eager"
         unoptimized
         className={`${overlayClass} ${hidden ? "opacity-0" : "opacity-100"}`}
-        style={{ clipPath: variant === "desktop" ? part.desktopClip : part.mobileClip }}
+        style={{
+          clipPath: variant === "desktop" ? part.desktopClip : part.mobileClip,
+        }}
       />
     </div>
   );
@@ -205,46 +221,123 @@ function Keychain({ variant }: { variant: "desktop" | "mobile" }) {
   );
 }
 
+// the photo on the camera's screen
+function Screen({
+  variant,
+  index,
+}: {
+  variant: "desktop" | "mobile";
+  index: number;
+}) {
+  const photo = PHOTOS[index];
+  return (
+    <div
+      className="screen absolute overflow-hidden bg-black"
+      style={SCREEN[variant]}
+    >
+      <Image
+        key={photo.src}
+        src={photo.src}
+        alt={photo.caption || `photo ${index + 1} of ${PHOTOS.length}`}
+        fill
+        sizes={
+          variant === "desktop"
+            ? "(min-width: 768px) 460px, 0px"
+            : "(max-width: 767px) 200px, 0px"
+        }
+        className="screen-photo object-cover"
+      />
+    </div>
+  );
+}
+
+// one-line caption for the photo on screen. desktop: tucked into the empty
+// strip just under the camera body (which ends at 87.5% of the drawing),
+// centered on the body so it clears the keychain. mobile: right under the
+// drawing, since the keychain fills the space below the body there.
+function Caption({
+  variant,
+  index,
+}: {
+  variant: "desktop" | "mobile";
+  index: number;
+}) {
+  const { caption, color } = PHOTOS[index];
+  return (
+    <p
+      className={`caption font-pretty min-h-[1.5em] truncate text-center text-xl ${
+        color ? "" : "text-foreground/70"
+      } ${variant === "desktop" ? "absolute top-[89%] left-[2%] w-[85%]" : "mt-4 w-full"}`}
+      style={color ? { color } : undefined}
+    >
+      {caption}
+    </p>
+  );
+}
+
 function Camera({
   variant,
   pressed,
   toggle,
+  index,
+  step,
 }: {
   variant: "desktop" | "mobile";
   pressed: boolean;
   toggle: () => void;
+  index: number;
+  step: (dir: 1 | -1) => void;
 }) {
   const desktop = variant === "desktop";
   return (
     <div
       className={
         desktop
-          ? "relative hidden w-full max-w-4xl md:block"
-          : "relative block w-full max-w-sm md:hidden"
+          ? "hidden w-full max-w-4xl md:block"
+          : "block w-full max-w-sm md:hidden"
       }
     >
-      <Image
-        src={desktop ? "/camera.png" : "/camera-mobile.png"}
-        alt="emi's hand drawn digicam"
-        width={desktop ? 2360 : 1640}
-        height={desktop ? 1640 : 2360}
-        loading="eager"
-        fetchPriority={desktop ? "high" : undefined}
-        unoptimized
-        className="h-auto w-full transform-gpu"
-      />
-      <Keychain variant={variant} />
-      {BUTTONS.map((part) => (
-        <Hotspot key={part.id} part={part} variant={variant} />
-      ))}
-      {/* switch overlay hidden = the red switch drawn underneath shows */}
-      <Hotspot
-        part={SWITCH}
-        variant={variant}
-        hidden={pressed}
-        pressed={pressed}
-        onClick={toggle}
-      />
+      {/* the drawing's box: every overlay and hotspot is positioned in % of
+          this, so nothing else may change its height */}
+      <div className="relative">
+        {/* behind the camera art, showing through its screen hole */}
+        <Screen variant={variant} index={index} />
+        <Image
+          src={desktop ? "/camera.png" : "/camera-mobile.png"}
+          alt="emi's hand drawn digicam"
+          width={desktop ? 2360 : 1640}
+          height={desktop ? 1640 : 2360}
+          loading="eager"
+          fetchPriority={desktop ? "high" : undefined}
+          unoptimized
+          className="relative h-auto w-full transform-gpu"
+        />
+        <Keychain variant={variant} />
+        {BUTTONS.map((part) => (
+          <Hotspot
+            key={part.id}
+            part={part}
+            variant={variant}
+            onClick={
+              part.id === "prev"
+                ? () => step(-1)
+                : part.id === "next"
+                  ? () => step(1)
+                  : undefined
+            }
+          />
+        ))}
+        {/* switch overlay hidden = the red switch drawn underneath shows */}
+        <Hotspot
+          part={SWITCH}
+          variant={variant}
+          hidden={pressed}
+          pressed={pressed}
+          onClick={toggle}
+        />
+        {desktop && <Caption variant={variant} index={index} />}
+      </div>
+      {!desktop && <Caption variant={variant} index={index} />}
     </div>
   );
 }
@@ -252,11 +345,16 @@ function Camera({
 export function Digicam() {
   const [pressed, setPressed] = useState(false);
   const toggle = () => setPressed((p) => !p);
+  const [index, setIndex] = useState(0);
+  // wraps around at both ends
+  const step = (dir: 1 | -1) =>
+    setIndex((i) => (i + dir + PHOTOS.length) % PHOTOS.length);
+  const camera = { pressed, toggle, index, step };
 
   return (
     <>
-      <Camera variant="desktop" pressed={pressed} toggle={toggle} />
-      <Camera variant="mobile" pressed={pressed} toggle={toggle} />
+      <Camera variant="desktop" {...camera} />
+      <Camera variant="mobile" {...camera} />
     </>
   );
 }
