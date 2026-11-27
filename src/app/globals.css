@@ -37,6 +37,34 @@
     50% { transform: translateY(-4px); }
   }
 
+  /* camera button hints, so it's clear what's clickable: 2s after the page
+     loads the buttons glow, then again every 6s (the 2s is the delay, the 6s
+     the cycle; the glow is the first ~1.2s of each cycle, the rest is rest).
+     Stronger than the hover glow on purpose. Hovering the camera stops the
+     hints (except the first 3 glows, which always play); leaving restarts them
+     (glow 2s later, then every 6s). If you change the 2s/6s, update
+     FORCED_HINTS_MS in digicam.tsx too, and rescale the 10%/20% below so the
+     glow stays ~1.2s long. */
+  --animate-hint: hint 6s ease-in-out 2s infinite both;
+
+  @keyframes hint {
+    0%, 20%, 100% {
+      filter: brightness(1) saturate(1) drop-shadow(0 0 0 rgb(255 255 255 / 0));
+    }
+    10% {
+      filter: brightness(1.22) saturate(1.22) drop-shadow(0 0 5px rgb(255 255 255 / 0.8));
+    }
+  }
+
+  /* same timing, for buttons with no overlay art to brighten (the flash, and
+     the switch while off): a soft white glow fades in and out over them */
+  --animate-hint-fade: hint-fade 6s ease-in-out 2s infinite both;
+
+  @keyframes hint-fade {
+    0%, 20%, 100% { opacity: 0; }
+    10% { opacity: 1; }
+  }
+
   /* camera keychain idle: a slow, barely-there sway around the ring */
   --animate-key-idle: key-idle 7s ease-in-out infinite;
 

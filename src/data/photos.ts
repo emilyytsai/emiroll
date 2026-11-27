@@ -22,6 +22,8 @@ import img14 from "../../public/14.jpg";
 import img15 from "../../public/15.jpg";
 import img16 from "../../public/16.jpg";
 import img17 from "../../public/17.jpg";
+import img18 from "../../public/18.jpg";
+import img19 from "../../public/19.jpg";
 
 // caption: one short line, or "" for none.
 // color: any CSS color for that caption ("#e8a0bf", "hotpink", "rgb(...)"),
@@ -49,13 +51,15 @@ export const PHOTOS: Photo[] = [
   { src: img6, caption: "mammoth w/ the bestie", color: "#556f9e" },
   { src: img7, caption: "tabling for doordash <3", color: "#bd2424" },
   { src: img8, caption: "my game dev team :D", color: "#633b31" },
-  { src: img9, caption: "figbuild 2026!", color: "#2b45c9" },
-  { src: img10, caption: "panchiko concert", color: "#242491" },
-  { src: img11, caption: "digicam selfie :)", color: "#c76574" },
-  { src: img12, caption: "trip to solvang", color: "#d1a90a" },
-  { src: img13, caption: "dj mustard spring concert", color: "#555555" },
-  { src: img14, caption: "halloween party 2026", color: "#6b8fe3" },
-  { src: img15, caption: "i love vgdc!", color: "#3c4aa3" },
-  { src: img16, caption: "more photobooth pics", color: "#6b2024" },
-  { src: img17, caption: "purple hair selfie :P", color: "#813ecf" },
+  { src: img9, caption: "the trio", color: "#c99a06" },
+  { src: img10, caption: "figbuild 2026!", color: "#2b45c9" },
+  { src: img11, caption: "panchiko concert", color: "#242491" },
+  { src: img12, caption: "digicam selfie :)", color: "#c76574" },
+  { src: img13, caption: "trip to solvang", color: "#d1a90a" },
+  { src: img14, caption: "dj mustard spring concert", color: "#555555" },
+  { src: img15, caption: "halloween party 2026", color: "#6b8fe3" },
+  { src: img16, caption: "nature walk", color: "#6f8a4a" },
+  { src: img17, caption: "i love vgdc!", color: "#3c4aa3" },
+  { src: img18, caption: "more photobooth pics", color: "#6b2024" },
+  { src: img19, caption: "purple hair selfie :P", color: "#813ecf" },
 ];

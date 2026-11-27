@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lightbox } from "@/components/photo-grid";
 import { PHOTOS, type Photo } from "@/data/photos";
 
@@ -28,6 +28,9 @@ type Part = {
   coverBase?: boolean;
   // makes the hotspot a link to this page instead of a button
   href?: string;
+  // where the hint's soft glow goes when the button's own art is hidden
+  // (so there's nothing to brighten): fitted to the button drawn in the base
+  glow?: { desktop: Box; mobile: Box };
 };
 
 const box = (
@@ -58,6 +61,10 @@ const SWITCH: Part = {
   desktopBox: box(67, 16.5, 8.5, 8),
   mobileBox: box(75.5, 67, 7.5, 8.5),
   round: true,
+  glow: {
+    desktop: box(67.4, 17.5, 7.5, 6.8),
+    mobile: box(75.7, 67.4, 6.8, 7.5),
+  },
 };
 
 // the flash (shutter) button. its art is a full redraw of the camera with the
@@ -74,6 +81,10 @@ const FLASH: Part = {
   desktopClip: "inset(0 17.5% 84% 68%)",
   mobileClip: "inset(68% 0 17.5% 84%)",
   coverBase: true,
+  glow: {
+    desktop: box(68.8, 8.6, 13, 9.4),
+    mobile: box(82, 68.8, 9.4, 13),
+  },
 };
 
 const BUTTONS: Part[] = [
@@ -125,14 +136,21 @@ const buttonClass = (round?: boolean) =>
 
 const artClass =
   "pointer-events-none absolute inset-0 h-full w-full select-none";
-// hover glow for buttons whose art is always showing
-const overlayClass = `${artClass} will-change-[filter,opacity] transition-[opacity,filter] duration-110 peer-hover:brightness-[1.15] peer-hover:saturate-[1.15]`;
+// art for buttons whose art is always showing (fades when hidden)
+const overlayClass = `${artClass} will-change-[filter,opacity] transition-opacity duration-110`;
+// hover/press glow, on a wrapper around that art rather than the art itself:
+// the hint pulse animates the art's filter, and an animation would override a
+// filter set on the same element, so hovering mid-hint would show nothing.
+// on separate elements the two stack instead.
+const glowWrapClass =
+  "pointer-events-none absolute inset-0 will-change-[filter] transition-[filter] duration-110 peer-hover:brightness-[1.15] peer-hover:saturate-[1.15]";
 
 function Hotspot({
   part,
   variant,
   hidden,
   pressed,
+  hint,
   onClick,
   onPress,
 }: {
@@ -140,12 +158,31 @@ function Hotspot({
   variant: "desktop" | "mobile";
   hidden?: boolean;
   pressed?: boolean;
+  // pulse the highlight to show this is clickable (stops while the camera is hovered;
+  // restarts on its normal schedule once the pointer leaves)
+  hint?: boolean;
   onClick?: () => void;
   // told when a pointer pushes the button down (true) and lets go (false)
   onPress?: (down: boolean) => void;
 }) {
   const [w, h] = variant === "desktop" ? [2360, 1640] : [1640, 2360];
   const style = variant === "desktop" ? part.desktopBox : part.mobileBox;
+  // held down by a finger or mouse: lights the art like hover does. phones
+  // have no hover, so this is their only feedback; a quick tap keeps it lit
+  // a moment after letting go so it's actually visible. tracked in state, not
+  // CSS :active, which iOS Safari doesn't apply reliably to taps.
+  const [down, setDown] = useState(false);
+  const press = (isDown: boolean) => {
+    if (isDown) setDown(true);
+    else setTimeout(() => setDown(false), 150);
+    onPress?.(isDown);
+  };
+  const pointer = {
+    onPointerDown: () => press(true),
+    onPointerUp: () => press(false),
+    onPointerLeave: () => press(false),
+    onPointerCancel: () => press(false),
+  };
   // each button + its art lives in its own layer so `peer-hover` only lights
   // up that button's art, not every overlay after it
   return (
@@ -154,6 +191,7 @@ function Hotspot({
         <Link
           href={part.href}
           aria-label={part.label}
+          {...pointer}
           className={`pointer-events-auto ${buttonClass(part.round)}`}
           style={style}
         />
@@ -163,10 +201,7 @@ function Hotspot({
           aria-label={part.label}
           aria-pressed={pressed}
           onClick={onClick}
-          onPointerDown={onPress && (() => onPress(true))}
-          onPointerUp={onPress && (() => onPress(false))}
-          onPointerLeave={onPress && (() => onPress(false))}
-          onPointerCancel={onPress && (() => onPress(false))}
+          {...pointer}
           className={`pointer-events-auto ${buttonClass(part.round)}`}
           style={style}
         />
@@ -181,25 +216,51 @@ function Hotspot({
           }}
         />
       )}
-      <Image
-        src={variant === "desktop" ? part.desktop : part.mobile}
-        alt=""
-        aria-hidden
-        width={w}
-        height={h}
-        loading="eager"
-        unoptimized
-        // pushed-in art (with a background patch under it) swaps instantly and
-        // skips the hover glow: it only shows while pressed, so the glow would
-        // just make the pressed button look lighter, and a fade would flash
-        // the bare patch over the button
-        className={`${part.coverBase ? artClass : overlayClass} ${
-          hidden ? "opacity-0" : "opacity-100"
-        }`}
-        style={{
-          clipPath: variant === "desktop" ? part.desktopClip : part.mobileClip,
-        }}
-      />
+      {/* pushed-in art (with a background patch under it) swaps instantly and
+          skips the hover glow: it only shows while pressed, so the glow would
+          just make the pressed button look lighter, and a fade would flash
+          the bare patch over the button */}
+      <div
+        className={
+          part.coverBase
+            ? "pointer-events-none absolute inset-0"
+            : `${glowWrapClass} ${down ? "brightness-[1.15] saturate-[1.15]" : ""}`
+        }
+      >
+        <Image
+          src={variant === "desktop" ? part.desktop : part.mobile}
+          alt=""
+          aria-hidden
+          width={w}
+          height={h}
+          loading="eager"
+          unoptimized
+          className={`${part.coverBase ? artClass : overlayClass} ${
+            hidden ? "opacity-0" : "opacity-100"
+          } ${
+            hint && !hidden && !part.coverBase
+              ? "animate-hint group-hover/cam:animate-none"
+              : ""
+          }`}
+          style={{
+            clipPath:
+              variant === "desktop" ? part.desktopClip : part.mobileClip,
+          }}
+        />
+      </div>
+      {/* art hidden, so nothing to brighten: pulse a soft glow over the
+          button drawn in the base instead */}
+      {hint && hidden && !down && part.glow && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute animate-hint-fade rounded-full group-hover/cam:animate-none group-hover/cam:opacity-0"
+          style={{
+            ...part.glow[variant],
+            background:
+              "radial-gradient(closest-side, rgba(255,255,255,0.5) 40%, rgba(255,255,255,0))",
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -388,10 +449,13 @@ type CameraState = {
   step: (dir: 1 | -1) => void;
   remove: () => void;
   expand: () => void;
+  // false during the first few hint glows, which play even while hovered
+  hoverPausesHints: boolean;
 };
 
 function Camera({
   variant,
+  hoverPausesHints,
   on,
   photo,
   label,
@@ -418,9 +482,13 @@ function Camera({
           : "block w-full max-w-md md:hidden"
       }
     >
-      {/* the drawing's box: every overlay and hotspot is positioned in % of
+      {/* group/cam: hovering anywhere on the camera pauses the button hints.
+          it's left off until the first few hints have played, so those play
+          even under the mouse. (adding it later doesn't restart the hints,
+          so they stay on schedule.)
+          the drawing's box: every overlay and hotspot is positioned in % of
           this, so nothing else may change its height */}
-      <div className="relative">
+      <div className={`${hoverPausesHints ? "group/cam" : ""} relative`}>
         {/* behind the camera art, showing through its screen hole */}
         {/* remounting on power-up fades the photo in from black */}
         <Screen
@@ -457,6 +525,7 @@ function Camera({
             key={part.id}
             part={part}
             variant={variant}
+            hint={on}
             onClick={actions[part.id]}
           />
         ))}
@@ -467,9 +536,10 @@ function Camera({
           variant={variant}
           hidden={!on}
           pressed={on}
+          hint
           onClick={togglePower}
         />
-        <FlashButton variant={variant} flash={flash} />
+        <FlashButton variant={variant} flash={flash} hint={on} />
         {desktop && <Caption variant={variant} photo={shown} />}
       </div>
       {!desktop && <Caption variant={variant} photo={shown} />}
@@ -482,9 +552,11 @@ function Camera({
 function FlashButton({
   variant,
   flash,
+  hint,
 }: {
   variant: "desktop" | "mobile";
   flash: () => void;
+  hint: boolean;
 }) {
   const [held, setHeld] = useState(false);
   const [tapped, setTapped] = useState(false);
@@ -493,6 +565,7 @@ function FlashButton({
       part={FLASH}
       variant={variant}
       hidden={!held && !tapped}
+      hint={hint}
       onPress={setHeld}
       onClick={() => {
         setTapped(true);
@@ -519,7 +592,17 @@ function flashBackground() {
   });
 }
 
+// the first 3 hint glows play even while the camera is hovered. matches the
+// hint timing in globals.css: 2s delay, a glow every 6s, each ~1.2s long, so
+// the 3rd glow ends at 2 + 6 + 6 + 1.2 = 15.2s after load.
+const FORCED_HINTS_MS = 2000 + 2 * 6000 + 1200;
+
 export function Digicam() {
+  const [hoverPausesHints, setHoverPausesHints] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setHoverPausesHints(true), FORCED_HINTS_MS);
+    return () => clearTimeout(t);
+  }, []);
   const [on, setOn] = useState(true);
   // deleting only hides a photo for this visit; a reload brings them all back
   const [photos, setPhotos] = useState(PHOTOS);
@@ -529,6 +612,7 @@ export function Digicam() {
 
   const photo = photos[index] ?? null;
   const camera: CameraState = {
+    hoverPausesHints,
     on,
     photo,
     label: `photo ${index + 1} of ${photos.length}`,
