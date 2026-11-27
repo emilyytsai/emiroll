@@ -221,36 +221,64 @@ function Keychain({ variant }: { variant: "desktop" | "mobile" }) {
   );
 }
 
+const screenSizes = (variant: "desktop" | "mobile") =>
+  variant === "desktop"
+    ? "(min-width: 768px) 460px, 0px"
+    : "(max-width: 767px) 200px, 0px";
+
 // the camera's screen: black when switched off, the current photo when on,
-// or a message once every photo has been deleted
+// or a message once every photo has been deleted.
+// changing photos crossfades: the old photo stays underneath until the new
+// one has loaded, then the new one fades (and settles) in on top of it.
 function Screen({
   variant,
   on,
   photo,
   label,
+  neighbors,
 }: {
   variant: "desktop" | "mobile";
   on: boolean;
   photo: Photo | null;
   label: string;
+  neighbors: Photo[];
 }) {
+  // the photo sitting fully faded in underneath the incoming one
+  const [settled, setSettled] = useState<Photo | null>(null);
+  // src of the incoming photo once it has loaded and can fade in
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const under =
+    on && settled && settled.src.src !== photo?.src.src ? settled : null;
+  const visible = loaded === photo?.src.src;
+
   return (
     <div
       className="screen @container absolute overflow-hidden bg-black"
       style={SCREEN[variant]}
     >
+      {under && (
+        <Image
+          key={`under-${under.src.src}`}
+          src={under.src}
+          alt=""
+          aria-hidden
+          fill
+          sizes={screenSizes(variant)}
+          className="screen-photo object-cover"
+        />
+      )}
       {on && photo && (
         <Image
-          key={photo.src}
+          key={photo.src.src}
           src={photo.src}
           alt={photo.caption || label}
           fill
-          sizes={
-            variant === "desktop"
-              ? "(min-width: 768px) 460px, 0px"
-              : "(max-width: 767px) 200px, 0px"
-          }
-          className="screen-photo object-cover"
+          sizes={screenSizes(variant)}
+          onLoad={() => setLoaded(photo.src.src)}
+          onTransitionEnd={() => setSettled(photo)}
+          className={`screen-photo object-cover transition-[opacity,scale] duration-400 ease-out ${
+            visible ? "scale-100 opacity-100" : "scale-[1.04] opacity-0"
+          }`}
         />
       )}
       {on && !photo && (
@@ -258,6 +286,21 @@ function Screen({
           no pictures to display!
         </p>
       )}
+      {/* the photos either side, loaded ahead of time so flipping to them
+          fades straight in instead of waiting on the download */}
+      {on &&
+        neighbors.map((n) => (
+          <Image
+            key={`next-${n.src.src}`}
+            src={n.src}
+            alt=""
+            aria-hidden
+            fill
+            loading="eager"
+            sizes={screenSizes(variant)}
+            className="pointer-events-none object-cover opacity-0"
+          />
+        ))}
     </div>
   );
 }
@@ -290,6 +333,7 @@ type CameraState = {
   on: boolean;
   photo: Photo | null;
   label: string;
+  neighbors: Photo[];
   togglePower: () => void;
   step: (dir: 1 | -1) => void;
   remove: () => void;
@@ -300,6 +344,7 @@ function Camera({
   on,
   photo,
   label,
+  neighbors,
   togglePower,
   step,
   remove,
@@ -324,7 +369,15 @@ function Camera({
           this, so nothing else may change its height */}
       <div className="relative">
         {/* behind the camera art, showing through its screen hole */}
-        <Screen variant={variant} on={on} photo={photo} label={label} />
+        {/* remounting on power-up fades the photo in from black */}
+        <Screen
+          key={on ? "on" : "off"}
+          variant={variant}
+          on={on}
+          photo={photo}
+          label={label}
+          neighbors={neighbors}
+        />
         <Image
           src={desktop ? "/camera.png" : "/camera-mobile.png"}
           alt="emi's hand drawn digicam"
@@ -371,6 +424,12 @@ export function Digicam() {
     on,
     photo,
     label: `photo ${index + 1} of ${photos.length}`,
+    neighbors: [
+      ...new Set([
+        photos[(index + 1) % photos.length],
+        photos[(index - 1 + photos.length) % photos.length],
+      ]),
+    ].filter((n) => n && n !== photo),
     togglePower: () => setOn((o) => !o),
     // wraps around at both ends; the buttons do nothing while it's off
     step: (dir) => {
