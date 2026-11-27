@@ -9,7 +9,7 @@ export default function Home() {
         {" "}from my camera roll
       </h1>
       {/* the digicam: centered in the space between the tagline and the footer */}
-      <div className="flex flex-1 items-center justify-center px-6">
+      <div className="flex flex-1 items-center justify-center px-2 md:px-6">
         <Digicam />
       </div>
     </main>

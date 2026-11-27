@@ -362,7 +362,7 @@ function Camera({
       className={
         desktop
           ? "hidden w-full max-w-4xl md:block"
-          : "block w-full max-w-sm md:hidden"
+          : "block w-full max-w-md md:hidden"
       }
     >
       {/* the drawing's box: every overlay and hotspot is positioned in % of
