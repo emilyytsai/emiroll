@@ -22,6 +22,9 @@ type Part = {
   // the base drawing; the d-pad divider would otherwise brighten away on hover
   desktopClip?: string;
   mobileClip?: string;
+  // the art draws the part smaller than the base drawing does (a button pushed
+  // in), so paint the page background under it first to hide the base's part
+  coverBase?: boolean;
   // makes the hotspot a link to this page instead of a button
   href?: string;
 };
@@ -54,6 +57,22 @@ const SWITCH: Part = {
   desktopBox: box(67, 16.5, 8.5, 8),
   mobileBox: box(75.5, 67, 7.5, 8.5),
   round: true,
+};
+
+// the flash (shutter) button. its art is a full redraw of the camera with the
+// button pushed in, so it's clipped down to just the button; otherwise its
+// empty switch slot would cover the power switch.
+const FLASH: Part = {
+  id: "flash",
+  label: "flash",
+  desktop: "/flash_down.png",
+  mobile: "/flash_down-mobile.png",
+  desktopBox: box(68.5, 3, 13.5, 12.5),
+  mobileBox: box(84.5, 68.5, 12.5, 13.5),
+  round: true,
+  desktopClip: "inset(0 17.5% 84% 68%)",
+  mobileClip: "inset(68% 0 17.5% 84%)",
+  coverBase: true,
 };
 
 const BUTTONS: Part[] = [
@@ -103,8 +122,10 @@ const buttonClass = (round?: boolean) =>
     round ? "rounded-full" : "rounded-lg"
   }`;
 
-const overlayClass =
-  "pointer-events-none absolute inset-0 h-full w-full select-none will-change-[filter,opacity] transition-[opacity,filter] duration-110 peer-hover:brightness-[1.15] peer-hover:saturate-[1.15]";
+const artClass =
+  "pointer-events-none absolute inset-0 h-full w-full select-none";
+// hover glow for buttons whose art is always showing
+const overlayClass = `${artClass} will-change-[filter,opacity] transition-[opacity,filter] duration-110 peer-hover:brightness-[1.15] peer-hover:saturate-[1.15]`;
 
 function Hotspot({
   part,
@@ -112,12 +133,15 @@ function Hotspot({
   hidden,
   pressed,
   onClick,
+  onPress,
 }: {
   part: Part;
   variant: "desktop" | "mobile";
   hidden?: boolean;
   pressed?: boolean;
   onClick?: () => void;
+  // told when a pointer pushes the button down (true) and lets go (false)
+  onPress?: (down: boolean) => void;
 }) {
   const [w, h] = variant === "desktop" ? [2360, 1640] : [1640, 2360];
   const style = variant === "desktop" ? part.desktopBox : part.mobileBox;
@@ -138,8 +162,22 @@ function Hotspot({
           aria-label={part.label}
           aria-pressed={pressed}
           onClick={onClick}
+          onPointerDown={onPress && (() => onPress(true))}
+          onPointerUp={onPress && (() => onPress(false))}
+          onPointerLeave={onPress && (() => onPress(false))}
+          onPointerCancel={onPress && (() => onPress(false))}
           className={`pointer-events-auto ${buttonClass(part.round)}`}
           style={style}
+        />
+      )}
+      {part.coverBase && (
+        <div
+          aria-hidden
+          className={`absolute inset-0 bg-background ${hidden ? "opacity-0" : "opacity-100"}`}
+          style={{
+            clipPath:
+              variant === "desktop" ? part.desktopClip : part.mobileClip,
+          }}
         />
       )}
       <Image
@@ -150,7 +188,13 @@ function Hotspot({
         height={h}
         loading="eager"
         unoptimized
-        className={`${overlayClass} ${hidden ? "opacity-0" : "opacity-100"}`}
+        // pushed-in art (with a background patch under it) swaps instantly and
+        // skips the hover glow: it only shows while pressed, so the glow would
+        // just make the pressed button look lighter, and a fade would flash
+        // the bare patch over the button
+        className={`${part.coverBase ? artClass : overlayClass} ${
+          hidden ? "opacity-0" : "opacity-100"
+        }`}
         style={{
           clipPath: variant === "desktop" ? part.desktopClip : part.mobileClip,
         }}
@@ -335,6 +379,7 @@ type CameraState = {
   label: string;
   neighbors: Photo[];
   togglePower: () => void;
+  flash: () => void;
   step: (dir: 1 | -1) => void;
   remove: () => void;
 };
@@ -346,6 +391,7 @@ function Camera({
   label,
   neighbors,
   togglePower,
+  flash,
   step,
   remove,
 }: CameraState & { variant: "desktop" | "mobile" }) {
@@ -406,11 +452,54 @@ function Camera({
           pressed={on}
           onClick={togglePower}
         />
+        <FlashButton variant={variant} flash={flash} />
         {desktop && <Caption variant={variant} photo={shown} />}
       </div>
       {!desktop && <Caption variant={variant} photo={shown} />}
     </div>
   );
+}
+
+// the flash button: shows the pushed-in art while held (or briefly on a
+// keyboard press), and fires the flash on click
+function FlashButton({
+  variant,
+  flash,
+}: {
+  variant: "desktop" | "mobile";
+  flash: () => void;
+}) {
+  const [held, setHeld] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  return (
+    <Hotspot
+      part={FLASH}
+      variant={variant}
+      hidden={!held && !tapped}
+      onPress={setHeld}
+      onClick={() => {
+        setTapped(true);
+        setTimeout(() => setTapped(false), 150);
+        flash();
+      }}
+    />
+  );
+}
+
+// the camera flash: the page background snaps to white, then fades back to
+// pink over a second. it animates the --background variable itself, so
+// everything painted with it (the page, the flash button's patch) flashes
+// together. pressing again mid-flash starts it over.
+function flashBackground() {
+  const root = document.documentElement;
+  root.getAnimations().forEach((a) => {
+    if (a.id === "camera-flash") a.cancel();
+  });
+  root.animate([{ "--background": "#fff", offset: 0 }], {
+    id: "camera-flash",
+    duration: 1000,
+    easing: "ease-out",
+  });
 }
 
 export function Digicam() {
@@ -431,6 +520,10 @@ export function Digicam() {
       ]),
     ].filter((n) => n && n !== photo),
     togglePower: () => setOn((o) => !o),
+    // only fires while the camera is on, like the other buttons
+    flash: () => {
+      if (on) flashBackground();
+    },
     // wraps around at both ends; the buttons do nothing while it's off
     step: (dir) => {
       if (!on || photos.length === 0) return;

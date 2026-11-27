@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* registered as a color so the camera flash (digicam.tsx) can fade it */
+@property --background {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffebfa;
+}
+
 :root {
   --background: #ffebfa;
   --foreground: #171717;

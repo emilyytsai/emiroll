@@ -17,6 +17,7 @@ import img9 from "../../public/9.jpg";
 import img10 from "../../public/10.jpg";
 import img11 from "../../public/11.jpg";
 import img12 from "../../public/12.jpg";
+import img13 from "../../public/13.jpg";
 
 // caption: one short line, or "" for none.
 // color: any CSS color for that caption ("#e8a0bf", "hotpink", "rgb(...)"),
@@ -42,10 +43,11 @@ export const PHOTOS: Photo[] = [
   { src: img4, caption: "node buds family @ the beach", color: "#f57a07" },
   { src: img5, caption: "mammoth w/ the bestie", color: "#556f9e" },
   { src: img6, caption: "tabling for doordash <3", color: "#bd2424" },
-  { src: img7, caption: "post panchiko concert", color: "#242491" },
-  { src: img8, caption: "digicam selfie :)", color: "#c76574" },
-  { src: img9, caption: "my game dev team :D", color: "#633b31" },
-  { src: img10, caption: "more photobooth pics", color: "#6b2024" },
+  { src: img7, caption: "my game dev team :D", color: "#633b31" },
+  { src: img8, caption: "panchiko concert", color: "#242491" },
+  { src: img9, caption: "digicam selfie :)", color: "#c76574" },
+  { src: img10, caption: "trip to solvang", color: "#d1a90a" },
   { src: img11, caption: "halloween party 2026", color: "#6b8fe3" },
   { src: img12, caption: "i love vgdc!", color: "#3c4aa3" },
+  { src: img13, caption: "more photobooth pics", color: "#6b2024" },
 ];
