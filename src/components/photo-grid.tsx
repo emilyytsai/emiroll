@@ -100,15 +100,18 @@ export function PhotoGrid() {
 
 // full-photo view. a native <dialog> gives Esc-to-close and keeps focus
 // inside while open; arrow keys flip photos, clicking the backdrop closes.
-function Lightbox({
+// also used by the digicam on mobile, with its own (deletable) photo list.
+export function Lightbox({
   index,
   setIndex,
+  photos = PHOTOS,
 }: {
   index: number | null;
   setIndex: (i: number | null) => void;
+  photos?: Photo[];
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const photo = index === null ? null : PHOTOS[index];
+  const photo = index === null ? null : (photos[index] ?? null);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -120,9 +123,9 @@ function Lightbox({
   const step = useCallback(
     (dir: 1 | -1) => {
       if (index === null) return;
-      setIndex((index + dir + PHOTOS.length) % PHOTOS.length);
+      setIndex((index + dir + photos.length) % photos.length);
     },
-    [index, setIndex],
+    [index, setIndex, photos.length],
   );
 
   return (
@@ -137,7 +140,7 @@ function Lightbox({
         if (e.key === "ArrowRight") step(1);
         if (e.key === "ArrowLeft") step(-1);
       }}
-      className="m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 backdrop:bg-black/85"
+      className="font-pretty m-0 h-dvh max-h-none w-screen max-w-none bg-transparent p-0 backdrop:bg-black/85"
     >
       {photo && index !== null && (
         <div

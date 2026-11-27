@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { Lightbox } from "@/components/photo-grid";
 import { PHOTOS, type Photo } from "@/data/photos";
 
 type Box = { left: string; top: string; width: string; height: string };
@@ -291,8 +292,12 @@ function Screen({
   const [settled, setSettled] = useState<Photo | null>(null);
   // src of the incoming photo once it has loaded and can fade in
   const [loaded, setLoaded] = useState<string | null>(null);
+  // only while a new photo is fading in. once every photo is deleted there's
+  // nothing to fade to, so the last one mustn't linger over the empty message
   const under =
-    on && settled && settled.src.src !== photo?.src.src ? settled : null;
+    on && photo && settled && settled.src.src !== photo.src.src
+      ? settled
+      : null;
   const visible = loaded === photo?.src.src;
 
   return (
@@ -382,6 +387,7 @@ type CameraState = {
   flash: () => void;
   step: (dir: 1 | -1) => void;
   remove: () => void;
+  expand: () => void;
 };
 
 function Camera({
@@ -394,6 +400,7 @@ function Camera({
   flash,
   step,
   remove,
+  expand,
 }: CameraState & { variant: "desktop" | "mobile" }) {
   const desktop = variant === "desktop";
   const actions: Record<string, (() => void) | undefined> = {
@@ -434,6 +441,16 @@ function Camera({
           unoptimized
           className="relative h-auto w-full transform-gpu"
         />
+        {/* mobile: tapping the screen opens the photo fullscreen */}
+        {!desktop && shown && (
+          <button
+            type="button"
+            aria-label="view photo fullscreen"
+            onClick={expand}
+            className="absolute z-10 cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-foreground/40"
+            style={SCREEN.mobile}
+          />
+        )}
         <Keychain variant={variant} />
         {BUTTONS.map((part) => (
           <Hotspot
@@ -507,6 +524,8 @@ export function Digicam() {
   // deleting only hides a photo for this visit; a reload brings them all back
   const [photos, setPhotos] = useState(PHOTOS);
   const [index, setIndex] = useState(0);
+  // the screen tapped open into the full-photo view (mobile)
+  const [viewing, setViewing] = useState(false);
 
   const photo = photos[index] ?? null;
   const camera: CameraState = {
@@ -536,12 +555,22 @@ export function Digicam() {
       setPhotos((list) => list.filter((p) => p !== photo));
       setIndex((i) => Math.max(0, Math.min(i, photos.length - 2)));
     },
+    expand: () => {
+      if (on && photo) setViewing(true);
+    },
   };
 
   return (
     <>
       <Camera variant="desktop" {...camera} />
       <Camera variant="mobile" {...camera} />
+      {/* the gallery's full-photo view; flipping photos in it flips the
+          camera too, so closing it lands on the photo you were looking at */}
+      <Lightbox
+        photos={photos}
+        index={viewing ? index : null}
+        setIndex={(i) => (i === null ? setViewing(false) : setIndex(i))}
+      />
     </>
   );
 }
