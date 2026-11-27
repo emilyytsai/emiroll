@@ -441,14 +441,14 @@ function Camera({
           unoptimized
           className="relative h-auto w-full transform-gpu"
         />
-        {/* mobile: tapping the screen opens the photo fullscreen */}
-        {!desktop && shown && (
+        {/* clicking/tapping the screen opens the photo fullscreen */}
+        {shown && (
           <button
             type="button"
             aria-label="view photo fullscreen"
             onClick={expand}
             className="absolute z-10 cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-foreground/40"
-            style={SCREEN.mobile}
+            style={SCREEN[variant]}
           />
         )}
         <Keychain variant={variant} />

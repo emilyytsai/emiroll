@@ -18,6 +18,10 @@ import img10 from "../../public/10.jpg";
 import img11 from "../../public/11.jpg";
 import img12 from "../../public/12.jpg";
 import img13 from "../../public/13.jpg";
+import img14 from "../../public/14.jpg";
+import img15 from "../../public/15.jpg";
+import img16 from "../../public/16.jpg";
+import img17 from "../../public/17.jpg";
 
 // caption: one short line, or "" for none.
 // color: any CSS color for that caption ("#e8a0bf", "hotpink", "rgb(...)"),
@@ -41,13 +45,17 @@ export const PHOTOS: Photo[] = [
   { src: img2, caption: "1st time in san fran!", color: "#b0704c" },
   { src: img3, caption: "22nd bday dinner", color: "#b8a170" },
   { src: img4, caption: "node buds family @ the beach", color: "#f57a07" },
-  { src: img5, caption: "mammoth w/ the bestie", color: "#556f9e" },
-  { src: img6, caption: "tabling for doordash <3", color: "#bd2424" },
-  { src: img7, caption: "my game dev team :D", color: "#633b31" },
-  { src: img8, caption: "panchiko concert", color: "#242491" },
-  { src: img9, caption: "digicam selfie :)", color: "#c76574" },
-  { src: img10, caption: "trip to solvang", color: "#d1a90a" },
-  { src: img11, caption: "halloween party 2026", color: "#6b8fe3" },
-  { src: img12, caption: "i love vgdc!", color: "#3c4aa3" },
-  { src: img13, caption: "more photobooth pics", color: "#6b2024" },
+  { src: img5, caption: "mirror pic w/ friends ^_^", color: "#34bbc7" },
+  { src: img6, caption: "mammoth w/ the bestie", color: "#556f9e" },
+  { src: img7, caption: "tabling for doordash <3", color: "#bd2424" },
+  { src: img8, caption: "my game dev team :D", color: "#633b31" },
+  { src: img9, caption: "figbuild 2026!", color: "#2b45c9" },
+  { src: img10, caption: "panchiko concert", color: "#242491" },
+  { src: img11, caption: "digicam selfie :)", color: "#c76574" },
+  { src: img12, caption: "trip to solvang", color: "#d1a90a" },
+  { src: img13, caption: "dj mustard spring concert", color: "#555555" },
+  { src: img14, caption: "halloween party 2026", color: "#6b8fe3" },
+  { src: img15, caption: "i love vgdc!", color: "#3c4aa3" },
+  { src: img16, caption: "more photobooth pics", color: "#6b2024" },
+  { src: img17, caption: "purple hair selfie :P", color: "#813ecf" },
 ];
