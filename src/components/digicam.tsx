@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { PHOTOS } from "@/data/photos";
+import { PHOTOS, type Photo } from "@/data/photos";
 
 type Box = { left: string; top: string; width: string; height: string };
 
@@ -221,32 +221,43 @@ function Keychain({ variant }: { variant: "desktop" | "mobile" }) {
   );
 }
 
-// the photo on the camera's screen
+// the camera's screen: black when switched off, the current photo when on,
+// or a message once every photo has been deleted
 function Screen({
   variant,
-  index,
+  on,
+  photo,
+  label,
 }: {
   variant: "desktop" | "mobile";
-  index: number;
+  on: boolean;
+  photo: Photo | null;
+  label: string;
 }) {
-  const photo = PHOTOS[index];
   return (
     <div
-      className="screen absolute overflow-hidden bg-black"
+      className="screen @container absolute overflow-hidden bg-black"
       style={SCREEN[variant]}
     >
-      <Image
-        key={photo.src}
-        src={photo.src}
-        alt={photo.caption || `photo ${index + 1} of ${PHOTOS.length}`}
-        fill
-        sizes={
-          variant === "desktop"
-            ? "(min-width: 768px) 460px, 0px"
-            : "(max-width: 767px) 200px, 0px"
-        }
-        className="screen-photo object-cover"
-      />
+      {on && photo && (
+        <Image
+          key={photo.src}
+          src={photo.src}
+          alt={photo.caption || label}
+          fill
+          sizes={
+            variant === "desktop"
+              ? "(min-width: 768px) 460px, 0px"
+              : "(max-width: 767px) 200px, 0px"
+          }
+          className="screen-photo object-cover"
+        />
+      )}
+      {on && !photo && (
+        <p className="screen-empty font-pretty flex h-full items-center justify-center px-[8cqw] text-center text-[9cqw] text-white">
+          no pictures to display!
+        </p>
+      )}
     </div>
   );
 }
@@ -257,12 +268,12 @@ function Screen({
 // drawing, since the keychain fills the space below the body there.
 function Caption({
   variant,
-  index,
+  photo,
 }: {
   variant: "desktop" | "mobile";
-  index: number;
+  photo: Photo | null;
 }) {
-  const { caption, color } = PHOTOS[index];
+  const { caption, color } = photo ?? { caption: "", color: "" };
   return (
     <p
       className={`caption font-pretty min-h-[1.5em] truncate text-center text-xl ${
@@ -275,20 +286,32 @@ function Caption({
   );
 }
 
+type CameraState = {
+  on: boolean;
+  photo: Photo | null;
+  label: string;
+  togglePower: () => void;
+  step: (dir: 1 | -1) => void;
+  remove: () => void;
+};
+
 function Camera({
   variant,
-  pressed,
-  toggle,
-  index,
+  on,
+  photo,
+  label,
+  togglePower,
   step,
-}: {
-  variant: "desktop" | "mobile";
-  pressed: boolean;
-  toggle: () => void;
-  index: number;
-  step: (dir: 1 | -1) => void;
-}) {
+  remove,
+}: CameraState & { variant: "desktop" | "mobile" }) {
   const desktop = variant === "desktop";
+  const actions: Record<string, (() => void) | undefined> = {
+    prev: () => step(-1),
+    next: () => step(1),
+    delete: remove,
+  };
+  // what's on screen (only while the camera is on)
+  const shown = on ? photo : null;
   return (
     <div
       className={
@@ -301,7 +324,7 @@ function Camera({
           this, so nothing else may change its height */}
       <div className="relative">
         {/* behind the camera art, showing through its screen hole */}
-        <Screen variant={variant} index={index} />
+        <Screen variant={variant} on={on} photo={photo} label={label} />
         <Image
           src={desktop ? "/camera.png" : "/camera-mobile.png"}
           alt="emi's hand drawn digicam"
@@ -318,38 +341,50 @@ function Camera({
             key={part.id}
             part={part}
             variant={variant}
-            onClick={
-              part.id === "prev"
-                ? () => step(-1)
-                : part.id === "next"
-                  ? () => step(1)
-                  : undefined
-            }
+            onClick={actions[part.id]}
           />
         ))}
-        {/* switch overlay hidden = the red switch drawn underneath shows */}
+        {/* switch art: green overlay = on; hiding it shows the pink "off"
+            switch drawn underneath */}
         <Hotspot
           part={SWITCH}
           variant={variant}
-          hidden={pressed}
-          pressed={pressed}
-          onClick={toggle}
+          hidden={!on}
+          pressed={on}
+          onClick={togglePower}
         />
-        {desktop && <Caption variant={variant} index={index} />}
+        {desktop && <Caption variant={variant} photo={shown} />}
       </div>
-      {!desktop && <Caption variant={variant} index={index} />}
+      {!desktop && <Caption variant={variant} photo={shown} />}
     </div>
   );
 }
 
 export function Digicam() {
-  const [pressed, setPressed] = useState(false);
-  const toggle = () => setPressed((p) => !p);
+  const [on, setOn] = useState(true);
+  // deleting only hides a photo for this visit; a reload brings them all back
+  const [photos, setPhotos] = useState(PHOTOS);
   const [index, setIndex] = useState(0);
-  // wraps around at both ends
-  const step = (dir: 1 | -1) =>
-    setIndex((i) => (i + dir + PHOTOS.length) % PHOTOS.length);
-  const camera = { pressed, toggle, index, step };
+
+  const photo = photos[index] ?? null;
+  const camera: CameraState = {
+    on,
+    photo,
+    label: `photo ${index + 1} of ${photos.length}`,
+    togglePower: () => setOn((o) => !o),
+    // wraps around at both ends; the buttons do nothing while it's off
+    step: (dir) => {
+      if (!on || photos.length === 0) return;
+      setIndex((i) => (i + dir + photos.length) % photos.length);
+    },
+    // drops the photo on screen and shows the one after it (or the new
+    // last one, if the last photo was deleted)
+    remove: () => {
+      if (!on || !photo) return;
+      setPhotos((list) => list.filter((p) => p !== photo));
+      setIndex((i) => Math.max(0, Math.min(i, photos.length - 2)));
+    },
+  };
 
   return (
     <>
